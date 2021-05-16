@@ -31,23 +31,17 @@ void writeIO(uint8_t *io, uint8_t we, uint8_t ce, uint8_t byte) {
 
 	in = 0;
 
-	bcm2835_gpio_write(ce, LOW);
-
-	bcm2835_delay(1);
-
-	bcm2835_gpio_write(we, LOW);
-
-	bcm2835_delay(1);
-
 	for(i = 0; i < 8; i++) {
 		bcm2835_gpio_write(*(io+i), ((byte & (1 << i))));
 	}
 
+	bcm2835_gpio_write(ce, LOW);
+	bcm2835_delay(1);
+	bcm2835_gpio_write(we, LOW);
 	bcm2835_delay(1);
 
 	bcm2835_gpio_write(we, HIGH);
-
 	bcm2835_delay(1);
-
 	bcm2835_gpio_write(ce, HIGH);
+	bcm2835_delay(1);
 }

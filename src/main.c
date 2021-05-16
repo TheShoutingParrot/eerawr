@@ -15,13 +15,16 @@ int main(int argc, char *argv[]) {
 	FILE *fp;
 
 	addrGiven = false;
+
+	/*ÄifcharPrint is set to true the output is in characters not hex */
 	charPrint = false;
 
 	operation = NOP;
-	filename = 0;
+	filename = 0; /* the index of the arg in which the filename is (0 = no file)*/
 	max = MAX_ADDRESS;
 
 	for(arg = 1; arg < argc; arg++) {
+		/* options */
 		if(!strcmp(argv[arg], "-a")) {
 			if(argc <= arg + 1)
 				usage();
@@ -54,6 +57,7 @@ int main(int argc, char *argv[]) {
 			help();
 		}
 
+		/* commands */
 		else if(!strcmp(argv[arg], "read")) {
 			operation = READBYTE;
 		}
@@ -89,6 +93,10 @@ int main(int argc, char *argv[]) {
 			operation = WRITEFILE;
 		}
 
+		else if(!strcmp(argv[arg], "erase")) {
+			operation = ERASE;
+		}
+
 		else {
 			printf("argument \"%s\" not recognized!\n", argv[arg]);
 			usage();
@@ -117,16 +125,18 @@ int main(int argc, char *argv[]) {
 	bcm2835_gpio_write(*(control+2), LOW);
 
 	switch(operation) {
+		/* Reads a single byte and prints it in hex */
 		case READBYTE:
-			inputMode(io, *control);
+			inputMode(io, control);
 
 			if(charPrint)
-				printf("'%c'\n", readIO(io));
+				printf("'%c'\n", readIO(io, control));
 			else
-				printf("0x%X\n", readIO(io));
+				printf("0x%X\n", readIO(io, control));
 
 			break;
 
+		/* Writes a single byte to the eeprom */
 		case WRITEBYTE:
 			outputMode(io, control);
 
@@ -134,8 +144,9 @@ int main(int argc, char *argv[]) {
 
 			break;
 
+		/* Reads everything from the variable address to the variable max */
 		case READALL:
-			inputMode(io, *control);
+			inputMode(io, control);
 
 			/* This means that we aren't writing to a file */
 			if(filename == 0) {
@@ -149,7 +160,7 @@ int main(int argc, char *argv[]) {
 							srWriteValue(sr, address);
 							srUpdateOutput(sr);
 							bcm2835_delayMicroseconds(1);
-							printf("0x%02X ", readIO(io));
+							printf("0x%02X ", readIO(io, control));
 
 							bcm2835_delayMicroseconds(1);
 						}
@@ -161,8 +172,7 @@ int main(int argc, char *argv[]) {
 						srWriteValue(sr, address);
 						srUpdateOutput(sr);
 						bcm2835_delayMicroseconds(1);
-						printf("%c", readIO(io));
-
+						printf("%c", readIO(io, control));
 						bcm2835_delayMicroseconds(1);
 					} 
 				}
@@ -173,7 +183,7 @@ int main(int argc, char *argv[]) {
 				fp = fopen(argv[filename], "wb");
 
 				if(fp == NULL) {
-					return EXIT_FAILURE;
+					die("file error:");
 				}
 				
 				for(; address < max; address++) {
@@ -181,7 +191,7 @@ int main(int argc, char *argv[]) {
 					srUpdateOutput(sr);
 					bcm2835_delayMicroseconds(1);
 
-					tempByte = readIO(io);
+					tempByte = readIO(io, control);
 
 					fwrite(&tempByte, 1, sizeof(uint8_t), fp);
 
@@ -193,39 +203,100 @@ int main(int argc, char *argv[]) {
 
 			break;
 		
+		/* write the contents of a given file to the eeprom starting from ADDRESS */
 		case WRITEFILE:
 			if(filename == 0)
-				return EXIT_FAILURE;
+				die("No file provided!");
 
 			fp = fopen(argv[filename], "rb");
 
 			if(fp == NULL) {
-				return EXIT_FAILURE;
+				die("File error:");
 			}
 
 			outputMode(io, control);
 
-			for(; address < MAX_ADDRESS; address++) {
+			for(; address < max; address++) {
 				tempByte = fread(&wByte, 1, sizeof(uint8_t), fp);
 
 				srWriteValue(sr, address);
 				srUpdateOutput(sr);
-				bcm2835_delayMicroseconds(1);
+				bcm2835_delayMicroseconds(10);
 
 				printf("Writing 0x%02X to 0x%04X", wByte, address);
+				outputMode(io, control);
 				writeIO(io, *(control + 1), *(control + 2), wByte);
+
+				inputMode(io, control);
+
+				bcm2835_delay(1);
+
+				if(wByte != readIO(io, control)) {
+					printf("\nwrite seems to have failed... trying again... %X != %X\n", wByte, readIO(io, control));
+					bcm2835_delay(1000);
+					outputMode(io, control);
+					writeIO(io, *(control + 1), *(control + 2), wByte);
+
+					inputMode(io, control);
+
+					bcm2835_delay(1000);
+
+					if(wByte != readIO(io, control)) {
+						printf("\nwrite failed... %X != %X\n", wByte, readIO(io, control));
+						return 1;
+					}
+				}
 
 				if(tempByte != 1)
 					break;
 
-				bcm2835_delayMicroseconds(1);
+				bcm2835_delayMicroseconds(10);
 
-				printf("\r\r\r\r\r\r\r\r\r\r\r\r", wByte, address);
+				printf("\r\r\r\r\r\r\r\r\r\r\r\r");
 			}
 
 			printf("\nSuccesfully written contents of file %s to the eeprom!\n", argv[filename]);
 
 			fclose(fp);
+
+			break;
+
+		/* Doesn't use the AT28C256 erase mode, just writes 0x0 to every single address (from ADDRESS to MAX) */
+		case ERASE:
+			wByte = 0x00;
+
+			for(; address < max; address++) {
+				srWriteValue(sr, address);
+				srUpdateOutput(sr);
+				bcm2835_delayMicroseconds(10);
+
+				printf("Writing 0x%02X to 0x%04X", wByte, address);
+				outputMode(io, control);
+				writeIO(io, *(control + 1), *(control + 2), wByte);
+
+				inputMode(io, control);
+
+				bcm2835_delay(1);
+
+				if(wByte != readIO(io, control)) {
+					printf("\nwrite seems to have failed... trying again... %X != %X\n", wByte, readIO(io, control));
+					bcm2835_delay(1000);
+					outputMode(io, control);
+					writeIO(io, *(control + 1), *(control + 2), wByte);
+
+					inputMode(io, control);
+
+					bcm2835_delay(1000);
+
+					if(wByte != readIO(io, control)) {
+						die("write failed... %X : %X\n", wByte, readIO(io, control));
+					}
+				}
+
+				bcm2835_delayMicroseconds(10);
+
+				printf("\r\r\r\r\r\r\r\r\r\r\r\r");
+			}
 
 			break;
 

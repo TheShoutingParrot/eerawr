@@ -12,7 +12,7 @@
 /* EEPROM control pins */
 
 /* EEPROM IO */
-#define IO_PIN_0                RPI_V2_GPIO_P1_03
+#define IO_PIN_0                RPI_V2_GPIO_P1_37
 #define IO_PIN_1                RPI_V2_GPIO_P1_05
 #define IO_PIN_2                RPI_GPIO_P1_07
 #define IO_PIN_3                RPI_GPIO_P1_08
@@ -38,12 +38,15 @@
 #define MAX_ADDRESS             32768
 
 enum _Operation {
-        NOP, READBYTE, WRITEBYTE, READALL, WRITEFILE,
+        NOP,
+	READBYTE, WRITEBYTE,
+	READALL, WRITEFILE,
+	ERASE,
 };
 
-bool inputMode(uint8_t *io, uint8_t enable);
+bool inputMode(uint8_t *io, uint8_t *control);
 bool outputMode(uint8_t *io, uint8_t *control);
-uint8_t readIO(uint8_t *io);
+uint8_t readIO(uint8_t *io, uint8_t *control);
 void writeIO(uint8_t *io, uint8_t we, uint8_t ce, uint8_t byte);
 
 void help(void);

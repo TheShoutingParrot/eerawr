@@ -17,7 +17,7 @@ To compile eerawr, run `make` in this directory which will create an executable 
 eerawr must be given a command to do something to the eeprom (write to it, read from it, etc). 
 
 Here's a list of commands for eerawr:
-|command |necessary arguments |description|
+|command |arguments |description|
 |--- | --- | ---|
 |`read` |-a ADDRESS |reads a byte from ADDRESS|
 |`write DATA`|-a ADDRESS |writes byte DATA to ADDRESS|

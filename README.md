@@ -46,3 +46,9 @@ This command reads everything from the eeprom and puts it into the rom.bin file.
 `eerawr writefile -f rom.txt`
 
 This command writes the contents of rom.txt to the eeprom.
+
+## Gallery
+
+Here's a picture of my eeprom programmer build reading address 0x0000:
+
+![eeprom programmer](images/eeprom_programmer.jpeg)

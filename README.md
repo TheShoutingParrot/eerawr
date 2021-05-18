@@ -6,7 +6,7 @@ EEprom Read And WRite
 eerawr is a program for the raspberry pi for reading data from and writing data to an AT28C256 eeprom. eerawr uses the [shiftr](https://github.com/TheShoutingParrot/shiftr) library for controlling the shift registers (for the ROM's address) and the [bcm2835](https://www.airspayce.com/mikem/bcm2835/) library for controlling the gpio pins.
 
 
-To use eerawr you must connect your raspberry pi's gpio pins to a 16(/15)-bit shift register or 2 8-bit shift registers that are connected to eachother, these shift registers must be connected to the ROMs address pins. The gpios must also be directly connected to the ROMs I/O pins. The program's pins are se in the [include/eerawr.h](include/eerawr.h) header file.
+To use eerawr you must connect your raspberry pi's gpio pins to a 16(/15)-bit shift register or 2 8-bit shift registers that are connected to eachother, these shift registers must be connected to the ROM's address pins. The gpios must also be directly connected to the ROMs I/O pins. The program's pins are set in the [include/eerawr.h](include/eerawr.h) header file.
 
 ## Compilation and installation
 
@@ -51,4 +51,4 @@ This command writes the contents of rom.txt to the eeprom.
 
 Here's a picture of my eeprom programmer build reading address 0x0000:
 
-![eeprom programmer](images/eeprom_programmer.jpeg)
+![eeprom programmer](images/eeprom-programmer.jpeg)
